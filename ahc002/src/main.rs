@@ -20,6 +20,7 @@ use num_traits::{abs_sub, Float};
 use permutohedron::Heap;
 use proconio::input;
 use proconio::marker::{Chars, Usize1};
+use rand::seq::SliceRandom;
 use whiteread::parse_line;
 // use std::io::*;
 
@@ -233,7 +234,7 @@ fn bfs(input: &Input) -> Vec<char> {
     return out;
 }
 
-fn bfs_greedy(input: &Input) -> Vec<char> {
+fn bfs_greedy_shuffle(input: &Input) -> Vec<char> {
     let mut out = vec![];
     let mut dists = vec![vec![-1; 50]; 50];
     dists[input.s.i][input.s.j] = 0;
@@ -241,15 +242,21 @@ fn bfs_greedy(input: &Input) -> Vec<char> {
     que.push_back(input.s.clone());
     let di = [1, 0, -1, 0];
     let dj = [0, 1, 0, -1];
+    let mut dij = [(1, 0), (0, 1), (-1, 0), (0, -1)];
     let dir = ['D', 'R', 'U', 'L'];
     let rev_dir = ['U', 'L', 'D', 'R'];
     let mut visited = HashSet::new();
+    let mut rng = rand_pcg::Mcg128Xsl64::new(812);
+    // 探索順序をシャッフル
+    dij.shuffle(&mut rng);
     visited.insert(input.T[input.s.i][input.s.j]);
     while !que.is_empty() {
         let s = que.pop_back().unwrap();
         for i in 0..4 {
-            let ni = s.i as isize + di[i];
-            let nj = s.j as isize + dj[i];
+            // let ni = s.i as isize + di[i];
+            // let nj = s.j as isize + dj[i];
+            let ni = s.i as isize + dij[i].0;
+            let nj = s.j as isize + dij[i].1;
             if !is_ok(ni, nj) {
                 continue;
             }
@@ -373,7 +380,7 @@ fn solve() {
     // let out = greedy(&input);
     // let out = greedy2(&input);
     // let out = bfs(&input);
-    let out = bfs_greedy(&input);
+    let out = bfs_greedy_shuffle(&input);
     println!("{}", out.iter().join(""));
 }
 
