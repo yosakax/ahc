@@ -420,6 +420,20 @@ fn greedy_minsort(input: &Input, start: &Instant) -> Output {
     let mut heap = BinaryHeap::new();
     let mut mp = HashMap::new();
     let mut B = input.B.clone();
+    let mut out = vec![];
+    // for j in 0..input.N {
+    //     for i in 0..B.len() / 2 {
+    //         if j > i {
+    //             continue;
+    //         }
+    //         if B[i][j] > B[i + 1][j] {
+    //             out.push((i, j, i + 1, j));
+    //             let old = B[i][j];
+    //             B[i][j] = B[i + 1][j];
+    //             B[i + 1][j] = old;
+    //         }
+    //     }
+    // }
     for i in 0..B.len() {
         for j in 0..B[i].len() {
             mp.insert(B[i][j], (i, j));
@@ -428,9 +442,8 @@ fn greedy_minsort(input: &Input, start: &Instant) -> Output {
             }
         }
     }
-    let mut out = vec![];
+    let &v = mp.keys().max().unwrap();
     loop {
-        let &v = mp.keys().max().unwrap();
         let &(i, j) = mp.get(&v).unwrap();
         if i == 29 || (j == 0 || j == 29) {
             break;
@@ -453,8 +466,8 @@ fn greedy_minsort(input: &Input, start: &Instant) -> Output {
             B[i2][j2] = old;
         }
     }
+    let &v = mp.keys().max().unwrap();
     loop {
-        let &v = mp.keys().max().unwrap();
         let &(i, j) = mp.get(&v).unwrap();
         if j == 0 || j == 29 {
             break;
@@ -484,17 +497,17 @@ fn greedy_minsort(input: &Input, start: &Instant) -> Output {
         if !mp.contains_key(&v) {
             break;
         }
-        let end = start.elapsed();
-        // eprintln!("elapsed: {}", end.as_millis());
-        if end.as_millis() >= TL {
-            break;
-        }
+        // let end = start.elapsed();
+        // // eprintln!("elapsed: {}", end.as_millis());
+        // if end.as_millis() >= TL {
+        //     break;
+        // }
         // eprintln!("v = {}", v);
         while out.len() < input.K {
-            let end = start.elapsed();
-            if end.as_millis() >= TL {
-                break;
-            }
+            // let end = start.elapsed();
+            // if end.as_millis() >= TL {
+            //     break;
+            // }
             // let (v, i, j) = heap.pop().unwrap();
             // let v = (-v) as usize;
             let &(i, j) = mp.get(&v).unwrap();
@@ -571,6 +584,192 @@ fn greedy_minsort(input: &Input, start: &Instant) -> Output {
         // eprintln!("vend = {}", v);
     }
     let out = Output { out, B };
+    // eprintln!(
+    //     "score: {}, ops={}",
+    //     evaluate(&out.B, out.out.len()),
+    //     out.out.len()
+    // );
+
+    return out;
+}
+
+fn greedy_minsort_33(input: &Input, start: &Instant) -> Output {
+    const TL: u128 = 1900;
+
+    let mut heap = BinaryHeap::new();
+    let mut mp = HashMap::new();
+    let mut B = input.B.clone();
+    let mut out = vec![];
+    for i in 0..B.len() {
+        for j in 0..B[i].len() {
+            mp.insert(B[i][j], (i, j));
+            if i > 0 {
+                heap.push((B[i][j] as isize * -1, i, j));
+            }
+        }
+    }
+    // 一番大きい値を右下か左下に持ってく
+    let &v = mp.keys().max().unwrap();
+    loop {
+        let &(i, j) = mp.get(&v).unwrap();
+        if i == 29 || (j == 0 || j == 29) {
+            break;
+        }
+        if j < 15 {
+            out.push((i + 1, j, i, j));
+            let &(i2, j2) = mp.get(&B[i + 1][j]).unwrap();
+            mp.insert(v, (i2, j2));
+            mp.insert(B[i2][j2], (i, j));
+            let old = B[i][j];
+            B[i][j] = B[i2][j2];
+            B[i2][j2] = old;
+        } else {
+            out.push((i + 1, j + 1, i, j));
+            let &(i2, j2) = mp.get(&B[i + 1][j + 1]).unwrap();
+            mp.insert(v, (i2, j2));
+            mp.insert(B[i2][j2], (i, j));
+            let old = B[i][j];
+            B[i][j] = B[i2][j2];
+            B[i2][j2] = old;
+        }
+    }
+
+    let &vmax = mp.keys().max().unwrap();
+    for v in 0..vmax {
+        if !mp.contains_key(&v) {
+            break;
+        }
+        // let end = start.elapsed();
+        // if end.as_millis() >= TL {
+        //     break;
+        // }
+        while out.len() < input.K {
+            // let end = start.elapsed();
+            // if end.as_millis() >= TL {
+            //     break;
+            // }
+            let &(i, j) = mp.get(&v).unwrap();
+            let mut is_changed = false;
+            if i == 0 {
+                break;
+            }
+
+            if j == 0 {
+                if B[i - 1][j] > B[i][j] {
+                    is_changed = true;
+                    out.push((i - 1, j, i, j));
+                    let &(i2, j2) = mp.get(&B[i - 1][j]).unwrap();
+                    mp.insert(v, (i2, j2));
+                    mp.insert(B[i2][j2], (i, j));
+                    let old = B[i][j];
+                    B[i][j] = B[i - 1][j];
+                    B[i - 1][j] = old;
+                }
+            } else if j == i {
+                if B[i - 1][j - 1] > B[i][j] {
+                    is_changed = true;
+                    out.push((i - 1, j - 1, i, j));
+                    let &(i2, j2) = mp.get(&B[i - 1][j - 1]).unwrap();
+                    mp.insert(v, (i2, j2));
+                    mp.insert(B[i2][j2], (i, j));
+                    let old = B[i][j];
+                    B[i][j] = B[i - 1][j - 1];
+                    B[i - 1][j - 1] = old;
+                }
+            } else {
+                if B[i - 1][j] > B[i][j] && B[i - 1][j - 1] > B[i][j] {
+                    is_changed = true;
+                    // let B1 = B.clone();
+                    let mut input1 = input.clone();
+                    input1.B = B.clone();
+                    let old = input1.B[i][j];
+                    input1.B[i][j] = input1.B[i - 1][j - 1];
+                    input1.B[i - 1][j - 1] = old;
+
+                    let mut input2 = input.clone();
+                    input2.B = B.clone();
+                    let old = input2.B[i][j];
+                    input2.B[i][j] = input2.B[i - 1][j];
+                    input2.B[i - 1][j] = old;
+
+                    let out1 = greedy_minsort(&input1, start);
+                    let out2 = greedy_minsort(&input2, start);
+                    // eprintln!("out1: {}, out2:{}", out1.out.len(), out2.out.len());
+                    if out1.out.len() < out2.out.len() {
+                        out.push((i - 1, j - 1, i, j));
+                        let &(i2, j2) = mp.get(&B[i - 1][j - 1]).unwrap();
+                        mp.insert(v, (i2, j2));
+                        mp.insert(B[i2][j2], (i, j));
+                        let old = B[i][j];
+                        B[i][j] = B[i - 1][j - 1];
+                        B[i - 1][j - 1] = old;
+                    } else {
+                        out.push((i - 1, j, i, j));
+                        let &(i2, j2) = mp.get(&B[i - 1][j]).unwrap();
+                        mp.insert(v, (i2, j2));
+                        mp.insert(B[i2][j2], (i, j));
+                        let old = B[i][j];
+                        B[i][j] = B[i - 1][j];
+                        B[i - 1][j] = old;
+                    }
+                } else {
+                    if B[i - 1][j - 1] > B[i - 1][j] {
+                        if B[i][j] < B[i - 1][j - 1] {
+                            is_changed = true;
+                            out.push((i - 1, j - 1, i, j));
+                            let &(i2, j2) = mp.get(&B[i - 1][j - 1]).unwrap();
+                            mp.insert(v, (i2, j2));
+                            mp.insert(B[i2][j2], (i, j));
+                            let old = B[i][j];
+                            B[i][j] = B[i - 1][j - 1];
+                            B[i - 1][j - 1] = old;
+                        }
+                    } else {
+                        if B[i - 1][j] > B[i][j] {
+                            is_changed = true;
+                            out.push((i - 1, j, i, j));
+                            let &(i2, j2) = mp.get(&B[i - 1][j]).unwrap();
+                            mp.insert(v, (i2, j2));
+                            mp.insert(B[i2][j2], (i, j));
+                            let old = B[i][j];
+                            B[i][j] = B[i - 1][j];
+                            B[i - 1][j] = old;
+                        }
+                    }
+                }
+
+                // if B[i - 1][j - 1] > B[i - 1][j] {
+                //     if B[i][j] < B[i - 1][j - 1] {
+                //         is_changed = true;
+                //         out.push((i - 1, j - 1, i, j));
+                //         let &(i2, j2) = mp.get(&B[i - 1][j - 1]).unwrap();
+                //         mp.insert(v, (i2, j2));
+                //         mp.insert(B[i2][j2], (i, j));
+                //         let old = B[i][j];
+                //         B[i][j] = B[i - 1][j - 1];
+                //         B[i - 1][j - 1] = old;
+                //     }
+                // } else {
+                //     if B[i - 1][j] > B[i][j] {
+                //         is_changed = true;
+                //         out.push((i - 1, j, i, j));
+                //         let &(i2, j2) = mp.get(&B[i - 1][j]).unwrap();
+                //         mp.insert(v, (i2, j2));
+                //         mp.insert(B[i2][j2], (i, j));
+                //         let old = B[i][j];
+                //         B[i][j] = B[i - 1][j];
+                //         B[i - 1][j] = old;
+                //     }
+                // }
+            }
+            // eprintln!("{}", out.len());
+            if !is_changed {
+                break;
+            }
+        }
+    }
+
+    let out = Output { out, B };
     eprintln!(
         "score: {}, ops={}",
         evaluate(&out.B, out.out.len()),
@@ -597,11 +796,13 @@ fn solve() {
     // let out = greedy_fixed(&input, &start);
     // let out = greedy_yokotate(&input, &start);
     // let out = greedy_tateyoko(&input, &start);
-    let out = greedy_minsort(&input, &start);
+    // let out = greedy_minsort(&input, &start);
+    let out = greedy_minsort_33(&input, &start);
     println!("{}", out.out.len());
     for v in out.out.iter() {
         println!("{} {} {} {}", v.0, v.1, v.2, v.3);
     }
+    println!("{}", evaluate(&out.B, out.out.len()));
     // println!("{:?}", out);
     // println!("{}", out.iter().join(""));
 }
